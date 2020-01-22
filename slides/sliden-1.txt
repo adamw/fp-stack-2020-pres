@@ -1,0 +1,5 @@
+Basic technique:
+
+* separate problem description from its interpretation
+
+* additional degree of freedom

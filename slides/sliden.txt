@@ -1,0 +1,26 @@
+.___________. __    __       ___      .__   __.  __  ___
+|           ||  |  |  |     /   \     |  \ |  | |  |/  /
+`---|  |----`|  |__|  |    /  ^  \    |   \|  | |  '  /
+    |  |     |   __   |   /  /_\  \   |  . `  | |    <
+    |  |     |  |  |  |  /  _____  \  |  |\   | |  .  \
+    |__|     |__|  |__| /__/     \__\ |__| \__| |__|\__\
+
+          ____    ____  ______    __    __
+          \   \  /   / /  __  \  |  |  |  |
+           \   \/   / |  |  |  | |  |  |  |
+            \_    _/  |  |  |  | |  |  |  |
+              |  |    |  `--'  | |  `--'  |
+              |__|     \______/   \______/
+
+
+* https://github.com/adamw/fp-stack-2020-pres
+
+* https://github.com/softwaremill/bootzooka
+
+* https://jvmwheel.sml.io
+
+* [Scala Times](http://scalatimes.com)
+
+* [SoftwareMill](http://www.softwaremill.com)
+
+* @adamwarski
