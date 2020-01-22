@@ -46,33 +46,35 @@ object Main extends App with StrictLogging {
     .in(jsonBody[LikeData])
     .errorOut(stringBody)
 
+  val transactor: Transactor[Task] = Transactor.fromDriverManager[Task](
+    "org.postgresql.Driver",
+    "jdbc:postgresql:fp",
+    "postgres",
+    ""
+  )
+
+  val likeRoute: HttpRoutes[Task] = likeEndpoint.toZioRoutes {
+    case (token, likeData) =>
+      if (token == "1234") {
+        insertLike(likeData.userName, likeData.languageName).transact(transactor).mapError { t =>
+          logger.error("Exception when executing a query", t)
+          "Internal server error"
+        }
+      } else {
+        IO.fail("Invalid token")
+      }
+  }
+
+  val yaml: String = {
+    import sttp.tapir.docs.openapi._
+    import sttp.tapir.openapi.circe.yaml._
+    List(likeEndpoint).toOpenAPI("Best languages", "1.0").toYaml
+  }
+
+  val swaggerRoute: HttpRoutes[Task] = new SwaggerHttp4s(yaml).routes[Task]
+
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] = ZIO.runtime.flatMap {
     implicit runtime: Runtime[Any] =>
-      val transactor: Transactor[Task] = Transactor.fromDriverManager[Task](
-        "org.postgresql.Driver",
-        "jdbc:postgresql:fp",
-        "postgres",
-        ""
-      )
-
-      val likeRoute: HttpRoutes[Task] = likeEndpoint.toZioRoutes {
-        case (token, likeData) =>
-          if (token == "1234") {
-            insertLike(likeData.userName, likeData.languageName).transact(transactor).mapError {
-              t =>
-                logger.error("Exception when executing a query", t)
-                "Internal server error"
-            }
-          } else {
-            IO.fail("Invalid token")
-          }
-      }
-
-      import sttp.tapir.docs.openapi._
-      import sttp.tapir.openapi.circe.yaml._
-      val yaml = List(likeEndpoint).toOpenAPI("Best languages", "1.0").toYaml
-      val swaggerRoute = new SwaggerHttp4s(yaml).routes[Task]
-
       BlazeServerBuilder[Task]
         .bindHttp(8080, "localhost")
         .withHttpApp(Router("/" -> (likeRoute <+> swaggerRoute)).orNotFound)
