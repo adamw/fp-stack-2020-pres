@@ -1,12 +1,12 @@
-About me
---------
+Current state
+-------------
 
-* coder @ [SoftwareMill](http://www.softwaremill.com)
-  ** custom software: Big&Fast Data, ML/AI, Blockchain, Messaging, ...
-  ** Scala/Kafka/Cassandra consulting
+Most popular: Java/Spring using @annotations
 
-* open-source: sttp, tapir, MacWire, ElasticMQ, Quicklens, Envers, ...
-
-* [blog](http://www.softwaremill.com/blog)
-
-* [twitter](@adamwarski)
+Can we do better?
+* abstraction
+* explorability
+* programmer-friendly
+* type-safety
+* flexibility
+* understandability

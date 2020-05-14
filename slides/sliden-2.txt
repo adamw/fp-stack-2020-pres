@@ -1,6 +1,6 @@
 Functional programming:
 
-* values: ConnectionIO, Task, Endpoint
+* values: ConnectionIO, Task/IO, Endpoint
     immutable!
 
 * functions:

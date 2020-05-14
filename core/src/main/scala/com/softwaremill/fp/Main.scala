@@ -24,29 +24,31 @@ import zio.interop.catz.implicits._
 
 object Main extends App with StrictLogging {
   def upsertLanguage(name: String): ConnectionIO[UUID] =
-    sql"""INSERT INTO languages(id, name) VALUES (${UUID.randomUUID()}, $name)
+    sql"""INSERT INTO languages(id, name) VALUES
+         |(${UUID.randomUUID()}, $name)
          |ON CONFLICT ON CONSTRAINT languages_name_key
-         |DO UPDATE SET name=languages.name RETURNING (id)""".stripMargin.update
-      .withUniqueGeneratedKeys[UUID]("id")
+         |DO UPDATE SET name=languages.name RETURNING (id)
+         |""".stripMargin.update.withUniqueGeneratedKeys[UUID]("id")
 
-  def insertLike(who: String, what: String): ConnectionIO[Unit] = {
-    upsertLanguage(what).flatMap { languageId =>
+  def insertLike(who: String, what: String): ConnectionIO[Unit] =
+    upsertLanguage(what).flatMap { id =>
       sql"""INSERT INTO likes(id, language_id, username, created)
-           |VALUES(${UUID.randomUUID()}, $languageId, $who, ${Instant
-             .now()})""".stripMargin.update.run.void
+           |VALUES(${UUID.randomUUID()}, $id, $who, ${Instant.now()})
+           |""".stripMargin.update.run.void
     }
-  }
 
   //
 
-  case class LikeData(userName: String, languageName: String)
+  case class LikeData(username: String, language: String)
   val likeEndpoint: Endpoint[(String, LikeData), String, Unit, Nothing] = endpoint.post
-    .in(auth.bearer)
+    .in(auth.bearer[String])
     .in("api" / "like")
     .in(jsonBody[LikeData])
     .errorOut(stringBody)
 
-  val transactor: Transactor[Task] = Transactor.fromDriverManager[Task](
+  //
+
+  val transactor: Transactor[Task] = Transactor.fromDriverManager(
     "org.postgresql.Driver",
     "jdbc:postgresql:fp",
     "postgres",
@@ -56,32 +58,43 @@ object Main extends App with StrictLogging {
   val likeRoute: HttpRoutes[Task] = likeEndpoint.toZioRoutes {
     case (token, likeData) =>
       if (token == "1234") {
-        insertLike(likeData.userName, likeData.languageName).transact(transactor).mapError { t =>
-          logger.error("Exception when executing a query", t)
-          "Internal server error"
-        }
+        insertLike(likeData.username, likeData.language)
+          .transact(transactor)
+          .mapError { t =>
+            logger.error("Exception when talking to the DB", t)
+            "Internal server error"
+          }
       } else {
         IO.fail("Invalid token")
       }
   }
 
+  //
+
   val yaml: String = {
     import sttp.tapir.docs.openapi._
     import sttp.tapir.openapi.circe.yaml._
-    List(likeEndpoint).toOpenAPI("Best languages", "1.0").toYaml
+    List(likeEndpoint).toOpenAPI("Best languages of 2020", "1.0").toYaml
   }
 
   val swaggerRoute: HttpRoutes[Task] = new SwaggerHttp4s(yaml).routes[Task]
 
-  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] = ZIO.runtime.flatMap {
-    implicit runtime: Runtime[Any] =>
-      BlazeServerBuilder[Task]
+  //
+
+  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] = {
+    ZIO.runtime.flatMap { implicit runtime: Runtime[Any] =>
+      BlazeServerBuilder[Task](runtime.platform.executor.asEC)
         .bindHttp(8080, "localhost")
         .withHttpApp(Router("/" -> (likeRoute <+> swaggerRoute)).orNotFound)
         .serve
         .compile
         .drain
         .map(_ => 0)
-        .catchAll(t => UIO(logger.error("Exception when starting server", t)).map(_ => 1))
+        .catchAll(
+          t =>
+            UIO(logger.error("Exception when starting server", t))
+              .map(_ => 1)
+        )
+    }
   }
 }

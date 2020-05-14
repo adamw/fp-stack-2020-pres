@@ -17,8 +17,6 @@
 
 * https://github.com/softwaremill/bootzooka
 
-* https://jvmwheel.sml.io
-
 * [Scala Times](http://scalatimes.com)
 
 * [SoftwareMill](http://www.softwaremill.com)
