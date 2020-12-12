@@ -60,9 +60,9 @@ object Main extends App with StrictLogging {
       if (token == "1234") {
         insertLike(likeData.username, likeData.language)
           .transact(transactor)
-          .mapError { t =>
-            logger.error("Exception when talking to the DB", t)
-            "Internal server error"
+          .flatMapError { t =>
+            UIO(logger.error("Exception when talking to the DB", t)) as
+              "Internal server error"
           }
       } else {
         IO.fail("Invalid token")
